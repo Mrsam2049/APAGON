@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:layout_marginEnd="5dp"
+    android:background="@drawable/rounded_8"
+    android:backgroundTint="@color/bg_frame"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="6dp">
+
+    <TextView
+        android:id="@+id/miniIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🏥"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/miniName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:maxLines="1"
+        android:text="Centro"
+        android:textColor="@color/text_dim"
+        android:textSize="7sp" />
+</LinearLayout>

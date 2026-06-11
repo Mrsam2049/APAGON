@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondos -->
+    <color name="bg_root">#04060D</color>
+    <color name="bg_frame">#060912</color>
+    <color name="bg_inset">#0A0F1C</color>
+    <color name="bg_inset_2">#060912</color>
+    <color name="bg_district_off">#0A0D14</color>
+    <color name="bg_district_lost">#0A0A0A</color>
+    <color name="panel_top">#1A2236</color>
+    <color name="panel_bottom">#0F1626</color>
+    <color name="panel_bottom_2">#0D1424</color>
+    <color name="district_on_top">#1E2A44</color>
+    <color name="district_on_bottom">#16203A</color>
+
+    <!-- Acentos -->
+    <color name="orange">#F97316</color>
+    <color name="orange_dark">#EA580C</color>
+    <color name="orange_light">#FB923C</color>
+    <color name="green">#22C55E</color>
+    <color name="green_light">#86EFAC</color>
+    <color name="red">#EF4444</color>
+    <color name="red_light">#FCA5A5</color>
+    <color name="amber">#F59E0B</color>
+    <color name="blue">#3B82F6</color>
+    <color name="blue_light">#60A5FA</color>
+    <color name="purple">#A855F7</color>
+    <color name="bronze">#B87333</color>
+
+    <!-- Texto / slate -->
+    <color name="text_strong">#F1F5F9</color>
+    <color name="text">#CBD5E1</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_dim">#64748B</color>
+    <color name="text_faint">#475569</color>
+    <color name="stroke">#334155</color>
+    <color name="stroke_soft">#1E293B</color>
+
+    <color name="scrim">#D1060912</color>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ApaGón</string>
+    <string name="tagline">SALVA TU CIUDAD</string>
+    <string name="percent_fmt">%d%%</string>
+
+    <!-- Menú -->
+    <string name="elige_modo">ELIGE UN MODO</string>
+    <string name="modo_campana">Campaña</string>
+    <string name="modo_campana_sub">5 noches · 5 escenarios</string>
+    <string name="modo_campana_desc">Cada noche un reto nuevo: ola de calor, falla de red, festival, sequía.</string>
+    <string name="modo_survival">Supervivencia</string>
+    <string name="modo_survival_sub">Infinito · escala hasta perder</string>
+    <string name="modo_survival_desc">Escenarios aleatorios y menos energía cada día. ¿Cuánto aguantas?</string>
+    <string name="datos_reales">Datos reales · XM SiMEM E17D25 · SINERGOX</string>
+
+    <!-- Municipio -->
+    <string name="elige_municipio">Elige tu municipio</string>
+    <string name="elige_municipio_sub">Cobertura real de cada ciudad (datos XM)</string>
+    <string name="volver">← Volver</string>
+    <string name="cobertura_label">COBERTURA</string>
+
+    <!-- Escenario / juego -->
+    <string name="gestionar_red">Gestionar la red →</string>
+    <string name="mw_disponibles">MW DISPONIBLES</string>
+    <string name="presupuesto">PRESUPUESTO</string>
+    <string name="terminar_noche">Terminar la noche →</string>
+    <string name="resolver_sobrecarga">⚠ Resuelve la sobrecarga</string>
+    <string name="distritos_hint">🗺️ DISTRITOS — toca para apagar/encender</string>
+    <string name="carga_disponible">⚡ CARGA / DISPONIBLE</string>
+    <string name="sobrecarga_aviso">⚠ Sobrecarga: apaga un distrito o juega energía</string>
+</resources>

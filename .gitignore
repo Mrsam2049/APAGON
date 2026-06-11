@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+app/build/
+**/build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local config (rutas y claves específicas de la máquina)
+local.properties
+
+# Logs y temporales
+*.log
+*.hprof
+
+# OS
+.DS_Store
+Thumbs.db
+
+# APK / build outputs
+*.apk
+*.aab
+*.ap_
+*.dex

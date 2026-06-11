@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cardRoot"
+    android:layout_width="82dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="6dp"
+    android:background="@drawable/card_panel"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="6dp"
+    android:paddingVertical="9dp">
+
+    <TextView
+        android:id="@+id/cardIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="3dp"
+        android:text="☀️"
+        android:textSize="21sp" />
+
+    <TextView
+        android:id="@+id/cardName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="2dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="Solar"
+        android:textColor="@color/text_strong"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/cardDesc"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_marginBottom="4dp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.2"
+        android:maxLines="2"
+        android:text="+14 MW gratis"
+        android:textColor="@color/text_muted"
+        android:textSize="7sp" />
+
+    <TextView
+        android:id="@+id/cardCost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gratis"
+        android:textColor="@color/green"
+        android:textSize="8sp"
+        android:textStyle="bold" />
+</LinearLayout>
