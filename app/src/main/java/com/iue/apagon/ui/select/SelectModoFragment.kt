@@ -1,5 +1,6 @@
 package com.iue.apagon.ui.select
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +8,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.iue.apagon.databinding.FragmentSelectModoBinding
 import com.iue.apagon.domain.model.GameMode
+import com.iue.apagon.ui.logros.LogrosActivity
+import com.iue.apagon.ui.tienda.TiendaActivity
 
 /**
  * Pantalla de menú: elige modo de juego. Al elegir, navega a la selección de municipio
@@ -29,6 +32,12 @@ class SelectModoFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding.cardCampana.setOnClickListener { goToMunicipio(GameMode.CAMPANA) }
         binding.cardSurvival.setOnClickListener { goToMunicipio(GameMode.SUPERVIVENCIA) }
+        binding.btnTienda.setOnClickListener {
+            startActivity(Intent(requireContext(), TiendaActivity::class.java))
+        }
+        binding.btnLogros.setOnClickListener {
+            startActivity(Intent(requireContext(), LogrosActivity::class.java))
+        }
     }
 
     private fun goToMunicipio(mode: GameMode) {

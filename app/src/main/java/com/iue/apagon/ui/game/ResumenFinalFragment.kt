@@ -1,5 +1,6 @@
 package com.iue.apagon.ui.game
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -10,6 +11,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import com.iue.apagon.databinding.FragmentResumenFinalBinding
 import com.iue.apagon.domain.model.GameState
+import com.iue.apagon.ui.tienda.TiendaActivity
 
 /**
  * Resumen final / victoria (fase "victoria"). Calcula medalla y puntaje a partir de los
@@ -34,8 +36,15 @@ class ResumenFinalFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val state = host?.finalState() ?: host?.currentPlaying()?.state ?: return
         render(state)
+
+        host?.vatios()?.let { EndScreenUi.animateVatios(binding.vatiosTotal, binding.vatiosDesglose, it) }
+        EndScreenUi.renderBadges(binding.logroBadges, host?.logros() ?: emptyList())
+
         binding.btnAgain.setOnClickListener { host?.restart() }
         binding.btnMenu.setOnClickListener { host?.exitToMenu() }
+        binding.btnCentro.setOnClickListener {
+            startActivity(Intent(requireContext(), TiendaActivity::class.java))
+        }
     }
 
     private fun render(state: GameState) {

@@ -1,5 +1,6 @@
 package com.iue.apagon.ui.game
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +9,7 @@ import androidx.fragment.app.Fragment
 import com.iue.apagon.databinding.FragmentGameOverBinding
 import com.iue.apagon.domain.model.GameMode
 import com.iue.apagon.domain.model.GameOverReason
+import com.iue.apagon.ui.tienda.TiendaActivity
 
 /**
  * Pantalla de derrota (fase "derrota"). Muestra el motivo y, en supervivencia, las noches
@@ -42,8 +44,14 @@ class GameOverFragment : Fragment() {
             binding.survivalBox.visibility = View.GONE
         }
 
+        host?.vatios()?.let { EndScreenUi.animateVatios(binding.vatiosTotal, binding.vatiosDesglose, it) }
+        EndScreenUi.renderBadges(binding.logroBadges, host?.logros() ?: emptyList())
+
         binding.btnRetry.setOnClickListener { host?.restart() }
         binding.btnMenu.setOnClickListener { host?.exitToMenu() }
+        binding.btnCentro.setOnClickListener {
+            startActivity(Intent(requireContext(), TiendaActivity::class.java))
+        }
     }
 
     private fun reasonText(reason: GameOverReason?): String = when (reason) {

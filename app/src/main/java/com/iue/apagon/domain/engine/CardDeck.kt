@@ -9,13 +9,12 @@ import kotlin.random.Random
  * Pool de cartas del juego y reparto de manos.
  *
  * [drawWeighted] reparte n cartas según su peso (las básicas y gratuitas salen más a menudo)
- * y garantiza que la mano siempre tenga al menos una carta de tipo ENERGIA, para que el
- * jugador nunca quede sin forma de generar energía. A cada carta repartida se le asigna un
- * id único (sufijo por posición) para poder distinguir duplicados en la mano.
+ * y garantiza que la mano siempre tenga al menos una carta de tipo ENERGIA. Las cartas
+ * desbloqueables se suman al pool solo si su id está en [unlockedCardIds].
  */
 object CardDeck {
 
-    // ── Plantillas de cartas (id base; drawWeighted las clona con id único) ──
+    // ── Plantillas base (siempre disponibles) ──
     private val solar = Card(
         id = "solar", name = "Paneles Solares", type = CardType.ENERGIA,
         description = "Energía limpia: +14 MW y mejora el índice ambiental.",
@@ -52,9 +51,33 @@ object CardDeck {
         cost = 0
     )
 
-    /** Todas las cartas disponibles. */
+    // ── Plantillas desbloqueables (entran al pool si están en el perfil) ──
+    private val hidroelectrica = Card(
+        id = "hidroelectrica", name = "Hidroeléctrica", type = CardType.ENERGIA,
+        description = "Mucha energía limpia: +30 MW.",
+        mw = 30, source = EnergySource.HIDRO, cost = 8
+    )
+    private val eficiencia = Card(
+        id = "eficiencia", name = "Eficiencia Energética", type = CardType.EFICIENCIA,
+        description = "Reduce un 30% la demanda de todos los distritos esta noche.",
+        cost = 0
+    )
+    // El campo mw guarda los millones que inyecta el subsidio (lo lee el engine).
+    private val subsidio = Card(
+        id = "subsidio", name = "Subsidio Estatal", type = CardType.SUBSIDIO,
+        description = "Inyecta +\$15M al presupuesto.",
+        mw = 15, cost = 0
+    )
+
+    /** Todas las cartas (base + desbloqueables) para consulta de la tienda/UI. */
     val pool: List<Card> = listOf(
         solar, eolica, termica, reparacion, baterias, campanaCiudadana, racionamiento
+    )
+
+    private val unlockableCards: Map<String, Card> = mapOf(
+        hidroelectrica.id to hidroelectrica,
+        eficiencia.id to eficiencia,
+        subsidio.id to subsidio
     )
 
     /** Carta -> peso de aparición. Las gratuitas/básicas pesan más. */
@@ -71,30 +94,39 @@ object CardDeck {
     private val energyCards: List<Card> = pool.filter { it.type == CardType.ENERGIA }
 
     /**
-     * Reparte [n] cartas con peso, garantizando al menos una de tipo ENERGIA.
+     * Reparte [n] cartas con peso (incluyendo las desbloqueadas), garantizando al menos una
+     * de tipo ENERGIA.
      */
-    fun drawWeighted(n: Int, rng: Random = Random.Default): List<Card> {
+    fun drawWeighted(
+        n: Int,
+        unlockedCardIds: Set<String> = emptySet(),
+        rng: Random = Random.Default
+    ): List<Card> {
         if (n <= 0) return emptyList()
 
+        val extras = unlockableCards.filterKeys { it in unlockedCardIds }.values.toList()
+        val activeWeighted = weighted + extras.map { it to 2 }
+        val activeEnergy = energyCards + extras.filter { it.type == CardType.ENERGIA }
+
         val drawn = ArrayList<Card>(n)
-        repeat(n) { drawn.add(pickWeighted(rng)) }
+        repeat(n) { drawn.add(pickWeighted(activeWeighted, rng)) }
 
         // Garantía: si no salió ninguna ENERGIA, reemplazamos una al azar por una ENERGIA.
         if (drawn.none { it.type == CardType.ENERGIA }) {
-            drawn[rng.nextInt(drawn.size)] = energyCards.random(rng)
+            drawn[rng.nextInt(drawn.size)] = activeEnergy.random(rng)
         }
 
         // Id único por posición para distinguir duplicados en la mano.
         return drawn.mapIndexed { index, card -> card.copy(id = "${card.id}_$index") }
     }
 
-    private fun pickWeighted(rng: Random): Card {
-        val totalWeight = weighted.sumOf { it.second }
+    private fun pickWeighted(pool: List<Pair<Card, Int>>, rng: Random): Card {
+        val totalWeight = pool.sumOf { it.second }
         var roll = rng.nextInt(totalWeight)
-        for ((card, weight) in weighted) {
+        for ((card, weight) in pool) {
             if (roll < weight) return card
             roll -= weight
         }
-        return weighted.last().first
+        return pool.last().first
     }
 }

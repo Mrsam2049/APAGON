@@ -1,6 +1,8 @@
 package com.iue.apagon.ui.viewmodel
 
+import com.iue.apagon.domain.engine.Logro
 import com.iue.apagon.domain.engine.NightResult
+import com.iue.apagon.domain.engine.VatiosBreakdown
 import com.iue.apagon.domain.model.GameState
 
 /**
@@ -29,11 +31,15 @@ sealed interface GameUiState {
     /** Derrota: algún indicador llegó a 0 o el hospital cayó 2 noches seguidas. */
     data class GameOver(
         val state: GameState,
-        val result: NightResult
+        val result: NightResult,
+        val vatios: VatiosBreakdown,
+        val logros: List<Logro>
     ) : GameUiState
 
     /** Victoria de campaña (5 noches superadas sin derrota). */
     data class Victory(
-        val state: GameState
+        val state: GameState,
+        val vatios: VatiosBreakdown,
+        val logros: List<Logro>
     ) : GameUiState
 }

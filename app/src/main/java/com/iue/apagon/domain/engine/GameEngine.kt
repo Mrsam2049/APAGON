@@ -27,10 +27,14 @@ class GameEngine {
      * - Campaña: el valor del escenario tal cual.
      * - Supervivencia: max(38, energyBaseMw - (day - 1) * 4).
      */
-    fun baseEnergy(state: GameState): Int = when (state.mode) {
-        GameMode.CAMPANA -> state.scenario.energyBaseMw
-        GameMode.SUPERVIVENCIA ->
-            maxOf(38, state.scenario.energyBaseMw - (state.day - 1) * 4)
+    fun baseEnergy(state: GameState): Int {
+        val escenario = when (state.mode) {
+            GameMode.CAMPANA -> state.scenario.energyBaseMw
+            GameMode.SUPERVIVENCIA ->
+                maxOf(38, state.scenario.energyBaseMw - (state.day - 1) * 4)
+        }
+        // Mejora "energia_base": +MW disponibles cada noche.
+        return escenario + state.bonusEnergiaBase
     }
 
     /** Energía disponible total = energía base + bonus aportado por cartas. */
@@ -79,7 +83,8 @@ class GameEngine {
             districts = resetDistricts,
             bonusEnergy = 0,
             campaignActive = false,
-            actionPoints = 2,
+            // Mejora "cuadrilla_extra": +1 jugada por noche.
+            actionPoints = 2 + state.bonusAccionesPorNoche,
             indicators = indicators
         )
     }
@@ -95,6 +100,7 @@ class GameEngine {
         var bonusEnergy = state.bonusEnergy
         var amb = state.indicators.environmental
         var campaignActive = state.campaignActive
+        var extraBudget = 0
 
         when (card.type) {
             CardType.ENERGIA -> {
@@ -109,6 +115,13 @@ class GameEngine {
                     if (d.lost) d else d.copy(demand = (d.demand - reduction).coerceAtLeast(8))
                 }
             }
+            CardType.EFICIENCIA -> {
+                // Reduce un 30% la demanda de cada distrito (mínimo 8).
+                districts = districts.map { d ->
+                    if (d.lost) d else d.copy(demand = (d.demand * 0.7).roundToInt().coerceAtLeast(8))
+                }
+            }
+            CardType.SUBSIDIO -> extraBudget += card.mw  // mw guarda los millones del subsidio
             CardType.CAMPANA_CIUDADANA -> campaignActive = true
         }
 
@@ -118,8 +131,10 @@ class GameEngine {
             actionPoints = (state.actionPoints - 1).coerceAtLeast(0),
             bonusEnergy = bonusEnergy,
             campaignActive = campaignActive,
+            // Registra el id base de la carta jugada (sin el sufijo de posición) para los logros.
+            cartasJugadas = state.cartasJugadas + card.id.substringBeforeLast("_"),
             indicators = state.indicators.copy(
-                budget = state.indicators.budget - card.cost,
+                budget = state.indicators.budget - card.cost + extraBudget,
                 environmental = amb,
                 coverage = coverage(districts)
             )
@@ -132,6 +147,7 @@ class GameEngine {
         EnergySource.EOLICA -> 8
         EnergySource.TERMICA -> -16
         EnergySource.BATERIA -> 2
+        EnergySource.HIDRO -> 4
         EnergySource.REPARACION, null -> 0
     }
 
@@ -146,6 +162,102 @@ class GameEngine {
             districts = districts,
             indicators = state.indicators.copy(coverage = coverage(districts))
         )
+    }
+
+    // ───────────────────────────── Progresión (puro) ───────────────────────────
+
+    /** Promedio de los 4 indicadores (presupuesto se acota a 0..100 para el promedio). */
+    fun promedioIndicadores(state: GameState): Int {
+        val i = state.indicators
+        return (i.coverage + i.budget.coerceIn(0, 100) + i.social + i.environmental) / 4
+    }
+
+    /** Medalla final según el promedio de indicadores. */
+    fun medalla(state: GameState): Medalla = when {
+        promedioIndicadores(state) >= 60 -> Medalla.ORO
+        promedioIndicadores(state) >= 40 -> Medalla.PLATA
+        else -> Medalla.BRONCE
+    }
+
+    /**
+     * Vatios ganados al terminar la partida, con desglose para animarlo en la pantalla final.
+     *   vatios = promedio*2 + noches*10 + bonusMedalla + (supervivencia: noches*15)
+     */
+    fun calcVatios(state: GameState): VatiosBreakdown {
+        val noches = state.day
+        val medallaBonus = when (medalla(state)) {
+            Medalla.ORO -> 100
+            Medalla.PLATA -> 50
+            Medalla.BRONCE -> 20
+        }
+        val supervivencia = if (state.mode == GameMode.SUPERVIVENCIA) noches * 15 else 0
+        return VatiosBreakdown(
+            indicadores = promedioIndicadores(state) * 2,
+            noches = noches * 10,
+            medalla = medallaBonus,
+            supervivencia = supervivencia
+        )
+    }
+
+    /**
+     * Aplica las mejoras compradas a un GameState recién creado (antes de [startNight]).
+     * Presupuesto y bienestar son de una sola vez; cuadrillas y energía base se guardan como
+     * bonus por-noche que [startNight]/[baseEnergy] vuelven a aplicar cada noche.
+     */
+    fun aplicarMejoras(state: GameState, mejoras: Set<String>): GameState {
+        var budget = state.indicators.budget
+        var social = state.indicators.social
+        var bonusAcc = state.bonusAccionesPorNoche
+        var bonusEner = state.bonusEnergiaBase
+
+        if ("presupuesto_inicial" in mejoras) budget = (budget * 1.1).roundToInt()
+        if ("colchon_social" in mejoras) social += 10
+        if ("cuadrilla_extra" in mejoras) bonusAcc += 1
+        if ("energia_base" in mejoras) bonusEner += 5
+
+        return state.copy(
+            indicators = state.indicators.copy(budget = budget, social = social),
+            bonusAccionesPorNoche = bonusAcc,
+            bonusEnergiaBase = bonusEner
+        )
+    }
+
+    /**
+     * Evalúa qué logros SATISFACE esta partida terminada (sin saber cuáles ya están
+     * desbloqueados; de eso se encarga el repositorio). Función pura.
+     */
+    fun evaluarLogros(state: GameState, result: NightResult): Set<Logro> {
+        val logros = mutableSetOf<Logro>()
+
+        // Terminar al menos una noche.
+        if (state.day >= 1) logros += Logro.PRIMER_APAGON
+
+        // Ganar sin haber apagado nunca el hospital.
+        val hospital = state.districts.firstOrNull { it.trait == DistrictTrait.HOSPITAL }
+        if (result.victory && hospital != null && hospital.totalOff == 0) {
+            logros += Logro.GUARDIAN_HOSPITAL
+        }
+
+        // Ganar usando solo energías renovables (nunca térmica/baterías/reparación).
+        if (result.victory) {
+            val noRenovables = setOf("termica", "baterias", "reparacion")
+            val renovables = setOf("solar", "eolica", "hidroelectrica")
+            val jugadas = state.cartasJugadas
+            if (jugadas.none { it in noRenovables } && jugadas.any { it in renovables }) {
+                logros += Logro.CIEN_RENOVABLE
+            }
+        }
+
+        // Aguantar 7 noches en Supervivencia.
+        if (state.mode == GameMode.SUPERVIVENCIA && state.day >= 7) logros += Logro.SUPERVIVIENTE
+
+        // Perder un distrito rural.
+        if (state.districts.any { it.trait == DistrictTrait.RURAL && it.lost }) logros += Logro.SACRIFICIO
+
+        // Final Oro.
+        if (medalla(state) == Medalla.ORO) logros += Logro.ORO_PURO
+
+        return logros
     }
 
     // ───────────────────────────── Resolver la noche ───────────────────────────

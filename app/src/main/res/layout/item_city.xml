@@ -73,4 +73,20 @@
         android:layout_height="wrap_content"
         android:baselineAligned="false"
         android:orientation="horizontal" />
+
+    <TextView
+        android:id="@+id/lockBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/pill"
+        android:backgroundTint="@color/navy"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="5dp"
+        android:text="🔒 300 ⚡ en el Centro"
+        android:textColor="@color/amber"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 </LinearLayout>

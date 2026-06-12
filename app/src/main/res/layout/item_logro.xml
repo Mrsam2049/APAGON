@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/logroRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    android:background="@drawable/bg_panel"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/logroIcono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🏥"
+        android:textSize="34sp" />
+
+    <TextView
+        android:id="@+id/logroTitulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="Guardián"
+        android:textColor="@color/text_strong"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/logroDescripcion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.2"
+        android:minLines="2"
+        android:text="Gana sin apagar el hospital"
+        android:textColor="@color/text_dim"
+        android:textSize="9sp" />
+
+    <TextView
+        android:id="@+id/logroEstado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:background="@drawable/pill"
+        android:backgroundTint="@color/navy"
+        android:paddingHorizontal="9dp"
+        android:paddingVertical="3dp"
+        android:text="+80 ⚡"
+        android:textColor="@color/amber"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+</LinearLayout>

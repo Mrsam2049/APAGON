@@ -32,7 +32,10 @@ data class GameState(
     val deck: List<Card> = emptyList(),
     val actionPoints: Int = 2,
     val bonusEnergy: Int = 0,
+    val bonusAccionesPorNoche: Int = 0,   // mejora "cuadrilla_extra" (+1 jugada por noche)
+    val bonusEnergiaBase: Int = 0,        // mejora "energia_base" (+MW disponibles por noche)
     val campaignActive: Boolean = false,
+    val cartasJugadas: List<String> = emptyList(),  // ids base de cartas jugadas en la partida (logros)
     val indicators: Indicators = Indicators(),
     val gameOver: Boolean = false,
     val victory: Boolean = false,

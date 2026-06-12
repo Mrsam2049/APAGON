@@ -1,6 +1,7 @@
 package com.iue.apagon.ui.select
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -8,17 +9,26 @@ import com.iue.apagon.R
 import com.iue.apagon.databinding.ItemCityBinding
 import com.iue.apagon.databinding.ItemCityMiniBinding
 import com.iue.apagon.domain.engine.MunicipioData
+import com.iue.apagon.domain.engine.Unlockables
 import com.iue.apagon.domain.model.Municipio
 import com.iue.apagon.ui.Presentation
 
 /**
  * Lista de municipios seleccionables. Muestra cobertura y un mini-resumen de los 4 distritos.
+ * Los municipios no desbloqueados aparecen atenuados con un candado y su costo.
  */
 class CityAdapter(
-    private val onClick: (Municipio) -> Unit
+    private val onClick: (Municipio) -> Unit,
+    private val onLocked: (Municipio) -> Unit
 ) : RecyclerView.Adapter<CityAdapter.VH>() {
 
     private val cities = Municipio.entries.toList()
+    private var unlocked: Set<String> = setOf("apartado")
+
+    fun setUnlocked(set: Set<String>) {
+        unlocked = if (set.isEmpty()) setOf("apartado") else set
+        notifyDataSetChanged()
+    }
 
     inner class VH(val binding: ItemCityBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -55,6 +65,19 @@ class CityAdapter(
             b.districtsRow.addView(mini.root)
         }
 
-        b.root.setOnClickListener { onClick(municipio) }
+        // Estado de bloqueo.
+        val id = municipio.name.lowercase()
+        val locked = id !in unlocked
+        if (locked) {
+            b.root.alpha = 0.55f
+            b.lockBadge.visibility = View.VISIBLE
+            val costo = Unlockables.byId(id)?.costo ?: 0
+            b.lockBadge.text = "🔒 $costo ⚡ en el Centro"
+            b.root.setOnClickListener { onLocked(municipio) }
+        } else {
+            b.root.alpha = 1f
+            b.lockBadge.visibility = View.GONE
+            b.root.setOnClickListener { onClick(municipio) }
+        }
     }
 }

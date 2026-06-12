@@ -43,12 +43,24 @@ class GameViewModel(
     /** Estado de juego vivo: fuente de verdad del modelo. */
     private var game: GameState? = null
 
+    /** Ids de cartas desbloqueadas en el perfil (se aplican al repartir manos). */
+    private var unlockedCardIds: Set<String> = emptySet()
+
+    /** Evita resolver dos veces la noche final mientras se persiste de forma asíncrona. */
+    private var finishing = false
+
     // 1) Inicia una nueva partida ------------------------------------------------
     fun startGame(mode: GameMode, municipio: Municipio) {
         _uiState.value = GameUiState.Loading
+        finishing = false
         viewModelScope.launch {
             // Refresca y cachea datos de energía; el juego sigue siendo jugable aunque falle.
             repository.fetchEnergyData()
+
+            // Perfil persistente: cartas desbloqueadas + mejoras compradas.
+            val perfil = repository.perfil()
+            unlockedCardIds = csv(perfil.cartasDesbloqueadas)
+            val mejoras = csv(perfil.mejorasCompradas)
 
             val scenario = when (mode) {
                 GameMode.CAMPANA -> DayScenarios.forDay(1)
@@ -60,11 +72,11 @@ class GameViewModel(
                 day = 1,
                 scenario = scenario,
                 districts = MunicipioData.districtsFor(municipio),
-                hand = CardDeck.drawWeighted(HAND_SIZE)
+                hand = CardDeck.drawWeighted(HAND_SIZE, unlockedCardIds)
             )
-            // startNight aplica el ingreso del día 1, los modificadores de demanda
-            // del escenario y enciende los distritos.
-            val ready = engine.startNight(initial)
+            // Aplica las mejoras compradas y luego prepara la primera noche.
+            val conMejoras = engine.aplicarMejoras(initial, mejoras)
+            val ready = engine.startNight(conMejoras)
             game = ready
             emitPlaying(ready)
         }
@@ -105,7 +117,7 @@ class GameViewModel(
 
     // 4) Cierra la noche y resuelve consecuencias -------------------------------
     fun endNight() {
-        if (_uiState.value !is GameUiState.Playing) return
+        if (_uiState.value !is GameUiState.Playing || finishing) return
         val state = game ?: return
 
         // No se puede cerrar la noche con la red sobrecargada.
@@ -118,22 +130,26 @@ class GameViewModel(
         val resolved = result.state
         game = resolved
 
-        when {
-            result.isGameOver -> {
-                _uiState.value = GameUiState.GameOver(resolved, result)
-                viewModelScope.launch {
-                    repository.savePartida(resolved, resolved.mode, resolved.municipio)
+        if (result.isGameOver || result.victory) {
+            finishing = true
+            // Persiste, acredita Vatios y desbloquea logros ANTES de emitir el estado final
+            // (así la pantalla de fin ya trae los Vatios y los logros nuevos para mostrarlos).
+            val vatios = engine.calcVatios(resolved)
+            viewModelScope.launch {
+                repository.savePartida(resolved, resolved.mode, resolved.municipio)
+                repository.addVatios(vatios.total)
+                val nuevosLogros = repository.desbloquearLogros(engine.evaluarLogros(resolved, result))
+                nuevosLogros.forEach { repository.addVatios(it.vatios) }
+
+                _uiState.value = if (result.victory) {
+                    GameUiState.Victory(resolved, vatios, nuevosLogros)
+                } else {
+                    GameUiState.GameOver(resolved, result, vatios, nuevosLogros)
                 }
+                nuevosLogros.forEach { _events.emit(UiEvent.LogroDesbloqueado(it)) }
             }
-            result.victory -> {
-                _uiState.value = GameUiState.Victory(resolved)
-                viewModelScope.launch {
-                    repository.savePartida(resolved, resolved.mode, resolved.municipio)
-                }
-            }
-            else -> {
-                _uiState.value = GameUiState.NightReport(resolved, result)
-            }
+        } else {
+            _uiState.value = GameUiState.NightReport(resolved, result)
         }
     }
 
@@ -150,7 +166,7 @@ class GameViewModel(
         val prepared = state.copy(
             day = nextDay,
             scenario = scenario,
-            hand = CardDeck.drawWeighted(HAND_SIZE)
+            hand = CardDeck.drawWeighted(HAND_SIZE, unlockedCardIds)
         )
         // startNight aplica el ingreso diario al presupuesto y reinicia la noche.
         val ready = engine.startNight(prepared)
@@ -169,6 +185,9 @@ class GameViewModel(
     private fun sendEvent(event: UiEvent) {
         viewModelScope.launch { _events.emit(event) }
     }
+
+    private fun csv(value: String): Set<String> =
+        value.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 
     companion object {
         private const val HAND_SIZE = 4

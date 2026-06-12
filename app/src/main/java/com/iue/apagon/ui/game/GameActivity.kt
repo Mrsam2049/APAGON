@@ -11,7 +11,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.iue.apagon.R
 import com.iue.apagon.data.repository.GameRepository
 import com.iue.apagon.databinding.ActivityGameBinding
+import com.iue.apagon.domain.engine.Logro
 import com.iue.apagon.domain.engine.NightResult
+import com.iue.apagon.domain.engine.VatiosBreakdown
 import com.iue.apagon.domain.model.GameMode
 import com.iue.apagon.domain.model.GameState
 import com.iue.apagon.domain.model.Municipio
@@ -40,10 +42,14 @@ class GameActivity : AppCompatActivity() {
     private var lastPlaying: GameUiState.Playing? = null
     private var lastReport: NightResult? = null
     private var lastFinalState: GameState? = null
+    private var lastVatios: VatiosBreakdown? = null
+    private var lastLogros: List<Logro> = emptyList()
 
     fun currentPlaying(): GameUiState.Playing? = lastPlaying
     fun currentReport(): NightResult? = lastReport
     fun finalState(): GameState? = lastFinalState
+    fun vatios(): VatiosBreakdown? = lastVatios
+    fun logros(): List<Logro> = lastLogros
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,8 +84,11 @@ class GameActivity : AppCompatActivity() {
                     val msg = when (event) {
                         UiEvent.OverloadError -> "⚠ Sobrecarga: apaga un distrito o juega energía"
                         UiEvent.CardBlocked -> "No puedes jugar esa carta (sin acciones o presupuesto)"
+                        is UiEvent.LogroDesbloqueado ->
+                            "${event.logro.icono} Logro: ${event.logro.titulo}  +${event.logro.vatios} ⚡"
                     }
-                    Toast.makeText(this@GameActivity, msg, Toast.LENGTH_SHORT).show()
+                    val dur = if (event is UiEvent.LogroDesbloqueado) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+                    Toast.makeText(this@GameActivity, msg, dur).show()
                 }
             }
         }
@@ -115,11 +124,15 @@ class GameActivity : AppCompatActivity() {
             is GameUiState.GameOver -> {
                 lastReport = state.result
                 lastFinalState = state.state
+                lastVatios = state.vatios
+                lastLogros = state.logros
                 show(GameOverFragment())
             }
 
             is GameUiState.Victory -> {
                 lastFinalState = state.state
+                lastVatios = state.vatios
+                lastLogros = state.logros
                 show(ResumenFinalFragment())
             }
         }

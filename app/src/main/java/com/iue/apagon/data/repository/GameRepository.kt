@@ -3,10 +3,17 @@ package com.iue.apagon.data.repository
 import android.content.Context
 import com.iue.apagon.data.local.AppDatabase
 import com.iue.apagon.data.local.dao.EnergiaDao
+import com.iue.apagon.data.local.dao.LogroDao
 import com.iue.apagon.data.local.dao.PartidaDao
+import com.iue.apagon.data.local.dao.PerfilDao
 import com.iue.apagon.data.local.entity.EnergiaDiariaEntity
+import com.iue.apagon.data.local.entity.LogroEntity
 import com.iue.apagon.data.local.entity.PartidaEntity
+import com.iue.apagon.data.local.entity.PerfilEntity
 import com.iue.apagon.data.remote.NetworkModule
+import com.iue.apagon.domain.engine.Logro
+import com.iue.apagon.domain.engine.Unlockable
+import com.iue.apagon.domain.engine.UnlockKind
 import com.iue.apagon.data.remote.SimemApiService
 import com.iue.apagon.data.remote.XmApiService
 import com.iue.apagon.data.remote.dto.XmRequest
@@ -27,7 +34,9 @@ class GameRepository private constructor(
     private val xmApi: XmApiService,
     private val simemApi: SimemApiService,
     private val partidaDao: PartidaDao,
-    private val energiaDao: EnergiaDao
+    private val energiaDao: EnergiaDao,
+    private val perfilDao: PerfilDao,
+    private val logroDao: LogroDao
 ) {
 
     /**
@@ -126,6 +135,79 @@ class GameRepository private constructor(
     /** Historial de partidas observable, directamente desde el DAO. */
     fun getHistorial(): Flow<List<PartidaEntity>> = partidaDao.observarHistorial()
 
+    // ─────────────────────────── Perfil / progresión ───────────────────────────
+
+    /** Perfil observable (Flow). */
+    fun observarPerfil(): Flow<PerfilEntity?> = perfilDao.get()
+
+    /** Devuelve el perfil, creando la fila por defecto si hiciera falta. */
+    suspend fun perfil(): PerfilEntity = withContext(Dispatchers.IO) {
+        perfilDao.insertDefault(PerfilEntity())
+        perfilDao.getOnce() ?: PerfilEntity()
+    }
+
+    /** Acredita (o descuenta) Vatios al perfil. */
+    suspend fun addVatios(cantidad: Int) = withContext(Dispatchers.IO) {
+        perfilDao.addVatios(cantidad)
+    }
+
+    /**
+     * Intenta desbloquear un ítem: valida saldo, lo agrega al CSV correspondiente y descuenta
+     * los Vatios. Devuelve el perfil actualizado, o un fallo (saldo insuficiente / ya comprado).
+     */
+    suspend fun desbloquear(item: Unlockable): Result<PerfilEntity> = withContext(Dispatchers.IO) {
+        val p = perfil()
+        if (p.vatiosTotales < item.costo) {
+            return@withContext Result.failure(IllegalStateException("Vatios insuficientes"))
+        }
+        val cartas = csv(p.cartasDesbloqueadas)
+        val municipios = csv(p.municipiosDesbloqueados)
+        val mejoras = csv(p.mejorasCompradas)
+
+        val yaTiene = when (item.kind) {
+            UnlockKind.CARTA -> item.id in cartas
+            UnlockKind.MUNICIPIO -> item.id in municipios
+            UnlockKind.MEJORA -> item.id in mejoras
+        }
+        if (yaTiene) return@withContext Result.failure(IllegalStateException("Ya desbloqueado"))
+
+        val actualizado = when (item.kind) {
+            UnlockKind.CARTA -> p.copy(cartasDesbloqueadas = join(cartas + item.id))
+            UnlockKind.MUNICIPIO -> p.copy(municipiosDesbloqueados = join(municipios + item.id))
+            UnlockKind.MEJORA -> p.copy(mejorasCompradas = join(mejoras + item.id))
+        }.let { it.copy(vatiosTotales = it.vatiosTotales - item.costo) }
+
+        perfilDao.update(actualizado)
+        Result.success(actualizado)
+    }
+
+    private fun csv(value: String): Set<String> =
+        value.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+
+    private fun join(set: Set<String>): String = set.joinToString(",")
+
+    // ──────────────────────────────── Logros ───────────────────────────────────
+
+    /** Logros observables (incluye los bloqueados). */
+    fun observarLogros(): Flow<List<LogroEntity>> = logroDao.observe()
+
+    /** Asegura que existan las filas de todos los logros (bloqueados por defecto). */
+    suspend fun ensureLogros() = withContext(Dispatchers.IO) {
+        logroDao.insertIgnore(Logro.entries.map { LogroEntity(it.name, desbloqueado = false) })
+    }
+
+    /**
+     * Marca como desbloqueados los logros [satisfechos] que aún no lo estaban.
+     * Devuelve solo los NUEVOS (para acreditar Vatios y notificar a la UI una sola vez).
+     */
+    suspend fun desbloquearLogros(satisfechos: Set<Logro>): List<Logro> = withContext(Dispatchers.IO) {
+        ensureLogros()
+        val yaDesbloqueados = logroDao.getDesbloqueadosIds().toSet()
+        val nuevos = satisfechos.filter { it.name !in yaDesbloqueados }
+        nuevos.forEach { logroDao.marcarDesbloqueado(it.name) }
+        nuevos
+    }
+
     /** Puntaje sencillo a partir de indicadores y noches superadas. Ajustable. */
     private fun computeScore(state: GameState): Int {
         val ind = state.indicators
@@ -158,7 +240,9 @@ class GameRepository private constructor(
                         xmApi = NetworkModule.xmApi,
                         simemApi = NetworkModule.simemApi,
                         partidaDao = db.partidaDao(),
-                        energiaDao = db.energiaDao()
+                        energiaDao = db.energiaDao(),
+                        perfilDao = db.perfilDao(),
+                        logroDao = db.logroDao()
                     ).also { INSTANCE = it }
                 }
             }

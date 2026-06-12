@@ -6,7 +6,9 @@ package com.iue.apagon.domain.model
 enum class CardType {
     ENERGIA,            // suma energía disponible (bonusEnergy) y afecta el índice ambiental
     RACIONAMIENTO,      // reduce la demanda de todos los distritos esta noche
-    CAMPANA_CIUDADANA   // sinergia: activa la reducción de penalización social
+    CAMPANA_CIUDADANA,  // sinergia: activa la reducción de penalización social
+    EFICIENCIA,         // (desbloqueable) reduce 30% la demanda de todos los distritos
+    SUBSIDIO            // (desbloqueable) inyecta presupuesto inmediato
 }
 
 /**
@@ -17,7 +19,8 @@ enum class EnergySource {
     EOLICA,       // amb +8
     TERMICA,      // amb -16
     REPARACION,   // amb +0
-    BATERIA       // amb +2
+    BATERIA,      // amb +2
+    HIDRO         // amb +4 (desbloqueable)
 }
 
 /**

@@ -52,12 +52,15 @@ object Presentation {
     fun cardIcon(card: Card): String = when (card.type) {
         CardType.CAMPANA_CIUDADANA -> "📢"
         CardType.RACIONAMIENTO -> "🪫"
+        CardType.EFICIENCIA -> "♻️"
+        CardType.SUBSIDIO -> "💵"
         CardType.ENERGIA -> when (card.source) {
             EnergySource.SOLAR -> "☀️"
             EnergySource.EOLICA -> "💨"
             EnergySource.TERMICA -> "🏭"
             EnergySource.REPARACION -> "🔧"
             EnergySource.BATERIA -> "🔋"
+            EnergySource.HIDRO -> "💧"
             null -> "⚡"
         }
     }
@@ -67,5 +70,7 @@ object Presentation {
         CardType.ENERGIA -> "#22C55E"
         CardType.CAMPANA_CIUDADANA -> "#3B82F6"
         CardType.RACIONAMIENTO -> "#F59E0B"
+        CardType.EFICIENCIA -> "#F59E0B"
+        CardType.SUBSIDIO -> "#60A5FA"
     }
 }
